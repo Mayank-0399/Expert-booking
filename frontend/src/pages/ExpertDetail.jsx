@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
-import { io } from 'socket.io-client';
+import { useSocket } from '../context/SocketContext';
 
 const formatDate = (dateStr) => {
   const d = new Date(dateStr + 'T00:00:00');
@@ -11,21 +11,24 @@ const formatDate = (dateStr) => {
 export default function ExpertDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const socket = useSocket();
   const [expert, setExpert] = useState(null);
   const [slots, setSlots] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
-  const socketRef = useRef(null);
 
   useEffect(() => {
     fetchExpert();
-    // Socket.io for real-time updates
-    socketRef.current = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000');
-    socketRef.current.emit('join-expert-room', id);
+  }, [id]);
 
-    socketRef.current.on('slot-booked', ({ date, timeSlot }) => {
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    socket.emit('join-expert-room', id);
+
+    const handleSlotBooked = ({ date, timeSlot }) => {
       setSlots((prev) => {
         const updated = { ...prev };
         if (updated[date]) {
@@ -35,9 +38,9 @@ export default function ExpertDetail() {
         }
         return updated;
       });
-    });
+    };
 
-    socketRef.current.on('slot-freed', ({ date, timeSlot }) => {
+    const handleSlotFreed = ({ date, timeSlot }) => {
       setSlots((prev) => {
         const updated = { ...prev };
         if (updated[date]) {
@@ -47,13 +50,17 @@ export default function ExpertDetail() {
         }
         return updated;
       });
-    });
+    };
+
+    socket.on('slot-booked', handleSlotBooked);
+    socket.on('slot-freed', handleSlotFreed);
 
     return () => {
-      socketRef.current?.emit('leave-expert-room', id);
-      socketRef.current?.disconnect();
+      socket.emit('leave-expert-room', id);
+      socket.off('slot-booked', handleSlotBooked);
+      socket.off('slot-freed', handleSlotFreed);
     };
-  }, [id]);
+  }, [id, socket]);
 
   const fetchExpert = async () => {
     setLoading(true);
@@ -101,12 +108,12 @@ export default function ExpertDetail() {
               <span className="category-badge">{expert.category}</span>
               <div className="hero-meta">
                 <div className="hero-meta-item">
-                  <span style={{ color: 'var(--accent)' }}>★ {expert.rating}</span>
+                  <span className="text-amber-300">★ {expert.rating}</span>
                   <span>({expert.reviewCount} reviews)</span>
                 </div>
-                <div className="hero-meta-item">🗓 {expert.experience} years experience</div>
-                <div className="hero-meta-item" style={{ color: 'var(--accent)', fontWeight: 700 }}>
-                  ₹{expert.hourlyRate} / hour
+                <div className="hero-meta-item">{expert.experience} years experience</div>
+                <div className="hero-meta-item text-amber-200">
+                  Rs {expert.hourlyRate} / hour
                 </div>
               </div>
             </div>
@@ -135,7 +142,11 @@ export default function ExpertDetail() {
           </div>
 
           {sortedDates.length === 0 ? (
-            <p style={{ color: 'var(--text2)', fontSize: 14 }}>No slots available at the moment.</p>
+            <div className="relative rounded-3xl border border-white/10 bg-white/[0.06] p-5 text-sm leading-6 text-slate-300">
+              <p className="font-semibold text-white">Fresh slots are being prepared.</p>
+              <p className="mt-1 text-slate-400">Refresh once, or reseed the database if this is old demo data.</p>
+              <button className="btn-outline mt-4" onClick={fetchExpert}>Refresh availability</button>
+            </div>
           ) : (
             <>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>

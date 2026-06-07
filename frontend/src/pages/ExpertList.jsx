@@ -66,12 +66,33 @@ export default function ExpertList() {
   }, [debouncedSearch, category]);
 
   const renderStars = (rating) => '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
+  const averageRating = experts.length
+    ? (experts.reduce((sum, expert) => sum + expert.rating, 0) / experts.length).toFixed(1)
+    : '4.8';
 
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">Find Your Expert</h1>
         <p className="page-subtitle">Book 1-on-1 sessions with world-class professionals</p>
+      </div>
+
+      <div className="bento-strip">
+        <div className="bento-tile">
+          <div className="bento-kicker">Available network</div>
+          <div className="bento-value">{pagination.total || experts.length || 10} experts</div>
+          <p className="bento-copy">Browse vetted specialists across health, finance, design, legal, tech, and more.</p>
+        </div>
+        <div className="bento-tile">
+          <div className="bento-kicker">Live booking</div>
+          <div className="bento-value">Real-time slots</div>
+          <p className="bento-copy">Availability updates instantly when another client books or releases a session.</p>
+        </div>
+        <div className="bento-tile">
+          <div className="bento-kicker">Client score</div>
+          <div className="bento-value">{averageRating}/5.0</div>
+          <p className="bento-copy">High-signal ratings, clean categories, and quick comparison cards.</p>
+        </div>
       </div>
 
       <div className="filters">

@@ -1,27 +1,33 @@
-import React, { createContext, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
 const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
-  const socketRef = useRef(null);
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    socketRef.current = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
+    const socketUrl =
+      process.env.REACT_APP_SOCKET_URL ||
+      (process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:5000');
+
+    const socketClient = io(socketUrl, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
+    setSocket(socketClient);
 
-    socketRef.current.on('connect', () => console.log('Socket connected'));
-    socketRef.current.on('disconnect', () => console.log('Socket disconnected'));
+    socketClient.on('connect', () => console.log('Socket connected'));
+    socketClient.on('disconnect', () => console.log('Socket disconnected'));
 
     return () => {
-      socketRef.current?.disconnect();
+      socketClient.disconnect();
+      setSocket(null);
     };
   }, []);
 
   return (
-    <SocketContext.Provider value={socketRef.current}>
+    <SocketContext.Provider value={socket}>
       {children}
     </SocketContext.Provider>
   );

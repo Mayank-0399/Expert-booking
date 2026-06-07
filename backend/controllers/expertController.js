@@ -1,5 +1,22 @@
 const Expert = require('../models/Expert');
 
+const generateFutureSlots = () => {
+  const slots = [];
+  const today = new Date();
+  const times = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+
+  for (let d = 1; d <= 14; d += 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + d);
+    if (date.getDay() === 0 || date.getDay() === 6) continue;
+
+    const dateStr = date.toISOString().split('T')[0];
+    times.forEach((time) => slots.push({ date: dateStr, time, isBooked: false }));
+  }
+
+  return slots;
+};
+
 // GET /api/experts
 exports.getExperts = async (req, res) => {
   try {
@@ -48,6 +65,11 @@ exports.getExpertById = async (req, res) => {
 
     // Group timeslots by date, only show future slots
     const today = new Date().toISOString().split('T')[0];
+    if (!expert.timeSlots.some((slot) => slot.date >= today)) {
+      expert.timeSlots = generateFutureSlots();
+      await expert.save();
+    }
+
     const groupedSlots = {};
 
     expert.timeSlots
