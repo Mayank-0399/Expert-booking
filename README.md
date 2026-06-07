@@ -153,4 +153,7 @@ REACT_APP_SOCKET_URL=http://localhost:5000
 # Set REACT_APP_API_URL and REACT_APP_SOCKET_URL to deployed backend URL
 ```
 
+## Live Link ##
+[Go to Website](https://expert-booking-2.onrender.com)
+
 > **Note**: Socket.io on Vercel requires the backend to be deployed separately (Vercel is serverless and doesn't support persistent WebSocket connections).
