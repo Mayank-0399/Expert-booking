@@ -26,6 +26,8 @@ app.set('io', io);
 app.use(cors({ origin: process.env.CLIENT_URL || true }));
 app.use(express.json());
 
+console.log("ENV KEYS:", Object.keys(process.env).includes("MONGODB_URI"));
+console.log("NODE_ENV:", process.env.NODE_ENV);
 // Connect DB
 connectDB();
 
